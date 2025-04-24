@@ -1,0 +1,74 @@
+### Configurations from config server
+jwt-user:
+  keys:
+    access-token-key: '{"kty":"oct","k":"h4dfgRX5ZRZooHem3mEnctZ-KtR9FoESgCnH-3BNgde8"}'
+    refresh-token-key: '{"kty":"oct","k":"95dfNwiBe7vR5KnbguLr5irJD-a2gesF"}'
+  ttl:
+    access-ttl: 20 #Minutes
+    refresh-ttl: 1 #Hours
+
+discovery-service-user:
+  server:
+    hostname: localhost #discovery-user profile property
+    port: 8010 #discovery-user profile properdiscovery
+  credentials:
+    username: user
+    password: pass
+#
+postgres-user:
+  server:
+    url: 192.168.0.125
+    port: 3434
+    database: task_db
+  credentials:
+    username: postgres
+    password: Fjeoqi38B3Nio83ndNehH328
+
+#
+kafka-user:
+  hostname: test
+###
+
+
+spring:
+  application:
+    name: authentication-ws
+  profiles:
+    active: discovery-service-user, postgres-user, jwt-user
+  config:
+    import: optional:configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@${CONFIG_SERVER_HOST:localhost}:${CONFIG_SERVER_PORT:8012}
+
+  datasource:
+    url: jdbc:postgresql://${postgres-user.server.url}:${postgres-user.server.port}/${postgres-user.server.database}
+    username: ${postgres-user.credentials.username}
+    password: ${postgres-user.credentials.password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    properties.hibernate:
+      show_sql: true
+      format_sql: true
+      hbm2ddl.auto: validate
+
+
+server.port: ${PORT:0}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${discovery-service-user.server.hostname}:${discovery-service-user.server.port}/eureka
+  instance:
+    prefer-ip-address: true
+
+
+management:
+  endpoint:
+    gateway:
+      access: unrestricted
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, gateway, mappings
