@@ -4,8 +4,8 @@ jwt-user:
     access-token-key: '{"kty":"oct","k":"h4dfgRX5ZRZooHem3mEnctZ-KtR9FoESgCnH-3BNgde8"}'
     refresh-token-key: '{"kty":"oct","k":"95dfNwiBe7vR5KnbguLr5irJD-a2gesF"}'
   ttl:
-    access-ttl: 20 #Minutes
-    refresh-ttl: 1 #Hours
+    access-ttl: 20m
+    refresh-ttl: 1h
 
 discovery-service-user:
   server:
@@ -50,7 +50,6 @@ spring:
       format_sql: true
       hbm2ddl.auto: validate
 
-
 server.port: ${PORT:0}
 
 eureka:
@@ -62,13 +61,7 @@ eureka:
 
 
 management:
-  endpoint:
-    gateway:
-      access: unrestricted
-    health:
-      probes:
-        enabled: true
   endpoints:
     web:
       exposure:
-        include: health, gateway, mappings
+        include: '*'

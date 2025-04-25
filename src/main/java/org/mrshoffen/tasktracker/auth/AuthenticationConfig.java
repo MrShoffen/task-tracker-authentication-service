@@ -33,11 +33,11 @@ public class AuthenticationConfig {
     @Bean
     JwtService jwtService(@Value("${jwt-user.keys.refresh-token-key}") String refreshKey,
                           @Value("${jwt-user.keys.access-token-key}") String accessKey,
-                          @Value("${jwt-user.ttl.refresh-ttl}") int refreshTtl,
-                          @Value("${jwt-user.ttl.access-ttl}") int accessTtl) throws ParseException, JOSEException {
+                          @Value("${jwt-user.ttl.refresh-ttl}") Duration refreshTtl,
+                          @Value("${jwt-user.ttl.access-ttl}") Duration accessTtl) throws ParseException, JOSEException {
 
-        var refreshTokenFactory = new RefreshJweTokenFactory(Duration.ofHours(refreshTtl));
-        var accessTokenFactory = new AccessJwsTokenFactory(Duration.ofMinutes(accessTtl));
+        var refreshTokenFactory = new RefreshJweTokenFactory(refreshTtl);
+        var accessTokenFactory = new AccessJwsTokenFactory(accessTtl);
 
         var refreshTokenSerializer = new RefreshJweTokenSerializer(
                 new DirectEncrypter(OctetSequenceKey.parse(refreshKey)),
@@ -45,7 +45,6 @@ public class AuthenticationConfig {
                 EncryptionMethod.A192GCM
         );
         var refreshTokenDeserializer = new RefreshJweTokenDeserializer(new DirectDecrypter(OctetSequenceKey.parse(refreshKey)));
-
 
         var accessTokenSerializer = new AccessJwsTokenSerializer(
                 new MACSigner(OctetSequenceKey.parse(accessKey)),

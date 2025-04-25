@@ -1,12 +1,14 @@
 package org.mrshoffen.tasktracker.auth.web;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
-import org.mrshoffen.tasktracker.auth.LoginDto;
+import lombok.extern.slf4j.Slf4j;
+import org.mrshoffen.tasktracker.auth.dto.LoginDto;
 import org.mrshoffen.tasktracker.auth.exception.InvalidCredentialsException;
 import org.mrshoffen.tasktracker.auth.exception.InvalidRefreshTokenException;
 import org.mrshoffen.tasktracker.auth.exception.RefreshTokenExpiredException;
-import org.mrshoffen.tasktracker.auth.service.AuthenticationService;
 import org.mrshoffen.tasktracker.auth.service.JwtService;
+import org.mrshoffen.tasktracker.commons.web.authentication.AuthenticationAttributes;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ProblemDetail;
@@ -17,45 +19,56 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.util.Map;
 
+import static org.mrshoffen.tasktracker.commons.web.authentication.AuthenticationAttributes.*;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationController {
 
-    private final AuthenticationService authenticationService;
 
     private final JwtService jwtService;
 
+    private final UserProfileClient userProfileClient;
+
     @Value("${jwt-user.ttl.refresh-ttl}")
-    private int refreshTtl;
+    private Duration refreshTtl;
 
     @Value("${jwt-user.ttl.access-ttl}")
-    private int accessTtl;
+    private Duration accessTtl;
 
 
     @PostMapping("/login")
     public ResponseEntity<Void> login(@RequestBody LoginDto loginDto) {
-        String userId = authenticationService.validateAndGetUserId(loginDto);
+        String userId;
+        try {
+            log.info("Attempt to authenticate - trying to validate user in user-profile-ws {}", loginDto);
+            userId = userProfileClient.getUserIdByEmailAndPassword(loginDto.email(), loginDto.password());
+        } catch (FeignException.NotFound e) {
+            log.warn("Failed to fetch user {} from user-profile-ws", loginDto.email());
+            throw new InvalidCredentialsException("Неверный логин или пароль", e);
+        }
 
         String refreshToken = jwtService.generateRefreshToken(Map.of("userId", userId, "userEmail", loginDto.email()));
         String accessToken = jwtService.generateAccessToken(refreshToken);
 
         ResponseCookie refreshTokenCookie = ResponseCookie
-                .from("refreshToken", refreshToken)
+                .from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                 .path("/")
-                .maxAge(Duration.ofHours(refreshTtl))
+                .maxAge(refreshTtl)
                 .httpOnly(true)
                 .build(); //todo samesite?
 
         ResponseCookie accessTokenCookie = ResponseCookie
-                .from("accessToken", accessToken)
+                .from(ACCESS_TOKEN_COOKIE_NAME, accessToken)
                 .path("/")
-                .maxAge(Duration.ofMinutes(accessTtl))
+                .maxAge(accessTtl)
                 .httpOnly(true)
                 .build();
 
+        log.info("Authentication successful. Access and refresh tokens are generated");
 
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString(), accessTokenCookie.toString())
@@ -63,15 +76,18 @@ public class AuthenticationController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<Void> refreshAccessToken(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+    public ResponseEntity<Void> refreshAccessToken(@CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
+        log.info("Attempt to refresh access token");
         String newAccessToken = jwtService.generateAccessToken(refreshToken);
 
         ResponseCookie accessTokenCookie = ResponseCookie
                 .from("accessToken", newAccessToken)
                 .path("/")
-                .maxAge(Duration.ofMinutes(accessTtl))
+                .maxAge(accessTtl)
                 .httpOnly(true)
                 .build();
+
+        log.info("Access token successfully refreshed");
 
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString())
@@ -79,32 +95,35 @@ public class AuthenticationController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+    public ResponseEntity<Void> logout(@CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
+        if (refreshToken != null) {
+            log.info("Attempt to logout, invalidating refresh token");
+            jwtService.addRefreshTokenToBlackList(refreshToken);
+        }
+
         ResponseCookie refreshTokenCookie = ResponseCookie
-                .from("refreshToken", "")
+                .from(REFRESH_TOKEN_COOKIE_NAME, "")
+                .path("/")
                 .maxAge(0)
-                .httpOnly(true)
                 .build();
 
         ResponseCookie accessTokenCookie = ResponseCookie
-                .from("accessToken", "")
+                .from(ACCESS_TOKEN_COOKIE_NAME, "")
+                .path("/")
                 .maxAge(0)
-                .httpOnly(true)
                 .build();
-
-        jwtService.invalidateRefreshToken(refreshToken);
-
 
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString(), refreshTokenCookie.toString())
                 .build();
     }
 
-
     @ExceptionHandler({InvalidCredentialsException.class,
             InvalidRefreshTokenException.class,
             RefreshTokenExpiredException.class})
     public ResponseEntity<ProblemDetail> handleInvalidCredentials(Exception e) {
+        log.warn("Exception occured: {}", e.getMessage());
+
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, e.getMessage());
         return ResponseEntity.status(UNAUTHORIZED).body(problem);
     }

@@ -1,14 +1,12 @@
 package org.mrshoffen.tasktracker.auth.service;
 
 
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.exception.InvalidRefreshTokenException;
 import org.mrshoffen.tasktracker.auth.exception.RefreshTokenExpiredException;
 import org.mrshoffen.tasktracker.auth.jwt.JwtToken;
 import org.mrshoffen.tasktracker.auth.jwt.deserializer.TokenDeserializer;
-import org.mrshoffen.tasktracker.auth.jwt.factory.AccessJwsTokenFactory;
-import org.mrshoffen.tasktracker.auth.jwt.factory.RefreshJweTokenFactory;
 import org.mrshoffen.tasktracker.auth.jwt.factory.TokenFactory;
 import org.mrshoffen.tasktracker.auth.jwt.serializer.TokenSerializer;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,6 +16,7 @@ import java.time.Instant;
 import java.util.Map;
 
 @RequiredArgsConstructor
+@Slf4j
 public class JwtService {
 
     private final TokenFactory<Map<String, String>> refreshTokenFactory;
@@ -36,34 +35,34 @@ public class JwtService {
     }
 
     public String generateAccessToken(String jwtRefreshToken) {
-        JwtToken deserRefreshToken = refreshTokenDeserializer.deserialize(jwtRefreshToken);
+        JwtToken deserializedRefreshToken = refreshTokenDeserializer.deserialize(jwtRefreshToken);
 
-        if (refreshTokenInvalidated(deserRefreshToken)) {
+        if (refreshTokenInBlackList(deserializedRefreshToken)) {
             throw new InvalidRefreshTokenException("Refresh токен не действителен!");
         }
 
-        if (deserRefreshToken.expiresAt().isBefore(Instant.now())) {
+        if (deserializedRefreshToken.expiresAt().isBefore(Instant.now())) {
             throw new RefreshTokenExpiredException("Срок действия refresh токена истёк");
         }
 
-        JwtToken accessToken = accessTokenFactory.generateToken(deserRefreshToken);
+        JwtToken accessToken = accessTokenFactory.generateToken(deserializedRefreshToken);
         return accessTokenSerializer.serialize(accessToken);
     }
 
 
-    public void invalidateRefreshToken(String refreshToken) {
-        JwtToken deserRefresh = refreshTokenDeserializer.deserialize(refreshToken);
-        invalidateRefreshToken(deserRefresh);
+    public void addRefreshTokenToBlackList(String refreshToken) {
+        JwtToken deserializedRefreshToken = refreshTokenDeserializer.deserialize(refreshToken);
+        addRefreshTokenToBlackList(deserializedRefreshToken);
     }
 
-    private void invalidateRefreshToken(JwtToken refreshToken) {
+    private void addRefreshTokenToBlackList(JwtToken refreshToken) {
         jdbcTemplate.update("""
                 INSERT INTO invalidated_tokens (id, c_keep_until) values (?, ?)
                 """, refreshToken.id(), Date.from(refreshToken.expiresAt()));
+        log.info("Jwt {} added to blacklist!", refreshToken);
     }
 
-    private boolean refreshTokenInvalidated(JwtToken refreshToken) {
-
+    private boolean refreshTokenInBlackList(JwtToken refreshToken) {
         return jdbcTemplate.queryForObject("""
                         SELECT EXISTS(SELECT id FROM invalidated_tokens WHERE id = ?)
                         """,

@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'org.mrshoffen.tasktracker'
-version = '1.0.0'
+version = '1.0.1'
 
 java {
     toolchain {
@@ -18,17 +18,20 @@ repositories {
 }
 
 dependencies {
-    implementation platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.3.9')
-    annotationProcessor platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.3.9')
+    implementation platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.4.0')
+    annotationProcessor platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.4.0')
+
+    implementation 'com.github.MrShoffen:task-tracker-commons'
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+//    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
 
 
     runtimeOnly 'org.postgresql:postgresql'
