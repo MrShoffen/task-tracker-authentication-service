@@ -4,8 +4,8 @@ jwt-user:
     access-token-key: '{"kty":"oct","k":"h4dfgRX5ZRZooHem3mEnctZ-KtR9FoESgCnH-3BNgde8"}'
     refresh-token-key: '{"kty":"oct","k":"95dfNwiBe7vR5KnbguLr5irJD-a2gesF"}'
   ttl:
-    access-ttl: 20m
-    refresh-ttl: 1h
+    access-ttl: 10s
+    refresh-ttl: 10s
 
 discovery-service-user:
   server:

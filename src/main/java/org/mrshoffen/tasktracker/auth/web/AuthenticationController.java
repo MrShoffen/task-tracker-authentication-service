@@ -78,6 +78,7 @@ public class AuthenticationController {
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshAccessToken(@CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
         log.info("Attempt to refresh access token");
+
         String newAccessToken = jwtService.generateAccessToken(refreshToken);
 
         ResponseCookie accessTokenCookie = ResponseCookie
@@ -118,14 +119,6 @@ public class AuthenticationController {
                 .build();
     }
 
-    @ExceptionHandler({InvalidCredentialsException.class,
-            InvalidRefreshTokenException.class,
-            RefreshTokenExpiredException.class})
-    public ResponseEntity<ProblemDetail> handleInvalidCredentials(Exception e) {
-        log.warn("Exception occured: {}", e.getMessage());
 
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, e.getMessage());
-        return ResponseEntity.status(UNAUTHORIZED).body(problem);
-    }
 
 }
