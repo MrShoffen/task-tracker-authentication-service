@@ -34,7 +34,7 @@ public class JwtService {
         return refreshTokenSerializer.serialize(refreshToken);
     }
 
-    public String generateAccessToken(String jwtRefreshToken) {
+    public String generateAccessToken(String jwtRefreshToken) throws InvalidRefreshTokenException, RefreshTokenExpiredException {
         JwtToken deserializedRefreshToken = refreshTokenDeserializer.deserialize(jwtRefreshToken);
 
         if (refreshTokenInBlackList(deserializedRefreshToken)) {

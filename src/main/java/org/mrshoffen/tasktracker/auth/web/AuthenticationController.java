@@ -5,13 +5,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.dto.LoginDto;
 import org.mrshoffen.tasktracker.auth.exception.InvalidCredentialsException;
-import org.mrshoffen.tasktracker.auth.exception.InvalidRefreshTokenException;
-import org.mrshoffen.tasktracker.auth.exception.RefreshTokenExpiredException;
 import org.mrshoffen.tasktracker.auth.service.JwtService;
-import org.mrshoffen.tasktracker.commons.web.authentication.AuthenticationAttributes;
+import org.mrshoffen.tasktracker.auth.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Duration;
 import java.util.Map;
 
-import static org.mrshoffen.tasktracker.commons.web.authentication.AuthenticationAttributes.*;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+import static org.mrshoffen.tasktracker.commons.web.authentication.AuthenticationAttributes.ACCESS_TOKEN_COOKIE_NAME;
+import static org.mrshoffen.tasktracker.commons.web.authentication.AuthenticationAttributes.REFRESH_TOKEN_COOKIE_NAME;
 
 @RestController
 @RequestMapping("/auth")
@@ -54,19 +51,8 @@ public class AuthenticationController {
         String refreshToken = jwtService.generateRefreshToken(Map.of("userId", userId, "userEmail", loginDto.email()));
         String accessToken = jwtService.generateAccessToken(refreshToken);
 
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
-                .path("/")
-                .maxAge(refreshTtl)
-                .httpOnly(true)
-                .build(); //todo samesite?
-
-        ResponseCookie accessTokenCookie = ResponseCookie
-                .from(ACCESS_TOKEN_COOKIE_NAME, accessToken)
-                .path("/")
-                .maxAge(accessTtl)
-                .httpOnly(true)
-                .build();
+        ResponseCookie refreshTokenCookie = CookieUtil.buildCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshTtl);
+        ResponseCookie accessTokenCookie = CookieUtil.buildCookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, accessTtl);
 
         log.info("Authentication successful. Access and refresh tokens are generated");
 
@@ -80,13 +66,7 @@ public class AuthenticationController {
         log.info("Attempt to refresh access token");
 
         String newAccessToken = jwtService.generateAccessToken(refreshToken);
-
-        ResponseCookie accessTokenCookie = ResponseCookie
-                .from("accessToken", newAccessToken)
-                .path("/")
-                .maxAge(accessTtl)
-                .httpOnly(true)
-                .build();
+        ResponseCookie accessTokenCookie = CookieUtil.buildCookie(ACCESS_TOKEN_COOKIE_NAME, newAccessToken, accessTtl);
 
         log.info("Access token successfully refreshed");
 
@@ -102,23 +82,11 @@ public class AuthenticationController {
             jwtService.addRefreshTokenToBlackList(refreshToken);
         }
 
-        ResponseCookie refreshTokenCookie = ResponseCookie
-                .from(REFRESH_TOKEN_COOKIE_NAME, "")
-                .path("/")
-                .maxAge(0)
-                .build();
-
-        ResponseCookie accessTokenCookie = ResponseCookie
-                .from(ACCESS_TOKEN_COOKIE_NAME, "")
-                .path("/")
-                .maxAge(0)
-                .build();
+        ResponseCookie refreshTokenCookie = CookieUtil.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
+        ResponseCookie accessTokenCookie = CookieUtil.clearCookie(ACCESS_TOKEN_COOKIE_NAME);
 
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, accessTokenCookie.toString(), refreshTokenCookie.toString())
                 .build();
     }
-
-
-
 }
