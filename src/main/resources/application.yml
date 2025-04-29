@@ -6,7 +6,11 @@ jwt-user:
   ttl:
     access-ttl: 30m
     refresh-ttl: 2h
-
+#
+redis-user:
+  host: 192.168.0.125
+  port: 6379
+#
 discovery-service-user:
   server:
     hostname: localhost #discovery-user profile property
@@ -15,18 +19,8 @@ discovery-service-user:
     username: user
     password: pass
 #
-postgres-user:
-  server:
-    url: 192.168.0.125
-    port: 3434
-    database: task_db
-  credentials:
-    username: postgres
-    password: Fjeoqi38B3Nio83ndNehH328
-
-#
 kafka-user:
-  hostname: test
+  bootstrap-servers: 192.168.0.125:29092,192.168.0.125:39092,192.168.0.125:49092
 ###
 
 
@@ -34,21 +28,23 @@ spring:
   application:
     name: authentication-ws
   profiles:
-    active: discovery-service-user, postgres-user, jwt-user
+    active: discovery-service-user, redis-user, jwt-user
   config:
     import: optional:configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@${CONFIG_SERVER_HOST:localhost}:${CONFIG_SERVER_PORT:8012}
 
-  datasource:
-    url: jdbc:postgresql://${postgres-user.server.url}:${postgres-user.server.port}/${postgres-user.server.database}
-    username: ${postgres-user.credentials.username}
-    password: ${postgres-user.credentials.password}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    open-in-view: false
-    properties.hibernate:
-      show_sql: true
-      format_sql: true
-      hbm2ddl.auto: validate
+  data.redis:
+    host: ${redis-user.host}
+    port: ${redis-user.port}
+
+  kafka:
+    bootstrap-servers: ${kafka-user.bootstrap-servers}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
 
 server.port: ${PORT:0}
 
@@ -58,10 +54,4 @@ eureka:
       defaultZone: http://${discovery-service-user.server.hostname}:${discovery-service-user.server.port}/eureka
   instance:
     prefer-ip-address: true
-
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: '*'
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}

@@ -1,11 +1,12 @@
-package org.mrshoffen.tasktracker.auth.web;
+package org.mrshoffen.tasktracker.auth.authentication.web;
 
-import feign.FeignException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.mrshoffen.tasktracker.auth.dto.LoginDto;
-import org.mrshoffen.tasktracker.auth.exception.InvalidCredentialsException;
-import org.mrshoffen.tasktracker.auth.service.JwtService;
+import org.mrshoffen.tasktracker.auth.authentication.dto.LoginDto;
+import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidRefreshTokenException;
+import org.mrshoffen.tasktracker.auth.authentication.service.AuthenticationService;
+import org.mrshoffen.tasktracker.auth.jwt.JwtUtil;
 import org.mrshoffen.tasktracker.auth.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -25,10 +26,9 @@ import static org.mrshoffen.tasktracker.commons.web.authentication.Authenticatio
 @Slf4j
 public class AuthenticationController {
 
+    private final JwtUtil jwtUtil;
 
-    private final JwtService jwtService;
-
-    private final UserProfileClient userProfileClient;
+    private final AuthenticationService authenticationService;
 
     @Value("${jwt-user.ttl.refresh-ttl}")
     private Duration refreshTtl;
@@ -36,20 +36,13 @@ public class AuthenticationController {
     @Value("${jwt-user.ttl.access-ttl}")
     private Duration accessTtl;
 
+    @PostMapping("/sign-in")
+    public ResponseEntity<Void> login(@Valid @RequestBody LoginDto loginDto) {
+        authenticationService.validateCredentialsAndGetUserId(loginDto);
+        String userId = authenticationService.getUserId(loginDto.email());
 
-    @PostMapping("/login")
-    public ResponseEntity<Void> login(@RequestBody LoginDto loginDto) {
-        String userId;
-        try {
-            log.info("Attempt to authenticate - trying to validate user in user-profile-ws {}", loginDto);
-            userId = userProfileClient.getUserIdByEmailAndPassword(loginDto.email(), loginDto.password());
-        } catch (FeignException.NotFound e) {
-            log.warn("Failed to fetch user {} from user-profile-ws", loginDto.email());
-            throw new InvalidCredentialsException("Неверный логин или пароль", e);
-        }
-
-        String refreshToken = jwtService.generateRefreshToken(Map.of("userId", userId, "userEmail", loginDto.email()));
-        String accessToken = jwtService.generateAccessToken(refreshToken);
+        String refreshToken = jwtUtil.generateRefreshToken(Map.of("userId", userId, "userEmail", loginDto.email()));
+        String accessToken = jwtUtil.generateAccessToken(refreshToken);
 
         ResponseCookie refreshTokenCookie = CookieUtil.buildCookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, refreshTtl);
         ResponseCookie accessTokenCookie = CookieUtil.buildCookie(ACCESS_TOKEN_COOKIE_NAME, accessToken, accessTtl);
@@ -64,8 +57,12 @@ public class AuthenticationController {
     @PostMapping("/refresh")
     public ResponseEntity<Void> refreshAccessToken(@CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
         log.info("Attempt to refresh access token");
+        if (refreshToken == null || authenticationService.tokenInBlackList(refreshToken)) {
+            log.warn("Refresh token is null or invalidated : {}", refreshToken);
+            throw new InvalidRefreshTokenException("Некорректный refresh токен");
+        }
 
-        String newAccessToken = jwtService.generateAccessToken(refreshToken);
+        String newAccessToken = jwtUtil.generateAccessToken(refreshToken);
         ResponseCookie accessTokenCookie = CookieUtil.buildCookie(ACCESS_TOKEN_COOKIE_NAME, newAccessToken, accessTtl);
 
         log.info("Access token successfully refreshed");
@@ -79,7 +76,7 @@ public class AuthenticationController {
     public ResponseEntity<Void> logout(@CookieValue(value = REFRESH_TOKEN_COOKIE_NAME, required = false) String refreshToken) {
         if (refreshToken != null) {
             log.info("Attempt to logout, invalidating refresh token");
-            jwtService.addRefreshTokenToBlackList(refreshToken);
+            authenticationService.addTokenToBlackList(refreshToken, refreshTtl);
         }
 
         ResponseCookie refreshTokenCookie = CookieUtil.clearCookie(REFRESH_TOKEN_COOKIE_NAME);

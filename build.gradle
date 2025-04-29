@@ -18,24 +18,22 @@ repositories {
 }
 
 dependencies {
-    implementation platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.4.0')
-    annotationProcessor platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.4.0')
+    implementation platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.5.1')
+    annotationProcessor platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.5.1')
 
     implementation 'com.github.MrShoffen:task-tracker-commons'
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.kafka:spring-kafka'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
 
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
-//    implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
 
-
-    runtimeOnly 'org.postgresql:postgresql'
-    implementation 'org.liquibase:liquibase-core'
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

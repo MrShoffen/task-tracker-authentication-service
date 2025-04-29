@@ -1,4 +1,4 @@
-package org.mrshoffen.tasktracker.auth.exception;
+package org.mrshoffen.tasktracker.auth.authentication.exception;
 
 public class InvalidRefreshTokenException extends RuntimeException{
     public InvalidRefreshTokenException(String message, Throwable cause) {

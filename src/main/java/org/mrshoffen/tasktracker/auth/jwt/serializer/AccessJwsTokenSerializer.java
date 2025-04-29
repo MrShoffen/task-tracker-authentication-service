@@ -1,7 +1,6 @@
 package org.mrshoffen.tasktracker.auth.jwt.serializer;
 
 import com.nimbusds.jose.*;
-import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;

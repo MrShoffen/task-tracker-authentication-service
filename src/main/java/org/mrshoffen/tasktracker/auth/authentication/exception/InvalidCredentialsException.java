@@ -1,4 +1,4 @@
-package org.mrshoffen.tasktracker.auth.exception;
+package org.mrshoffen.tasktracker.auth.authentication.exception;
 
 public class InvalidCredentialsException extends RuntimeException{
     public InvalidCredentialsException(String message, Throwable cause) {

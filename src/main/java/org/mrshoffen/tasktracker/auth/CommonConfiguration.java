@@ -8,33 +8,34 @@ import com.nimbusds.jose.crypto.DirectDecrypter;
 import com.nimbusds.jose.crypto.DirectEncrypter;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
-import lombok.RequiredArgsConstructor;
+import org.mrshoffen.tasktracker.auth.jwt.JwtUtil;
 import org.mrshoffen.tasktracker.auth.jwt.deserializer.RefreshJweTokenDeserializer;
 import org.mrshoffen.tasktracker.auth.jwt.factory.AccessJwsTokenFactory;
 import org.mrshoffen.tasktracker.auth.jwt.factory.RefreshJweTokenFactory;
 import org.mrshoffen.tasktracker.auth.jwt.serializer.AccessJwsTokenSerializer;
 import org.mrshoffen.tasktracker.auth.jwt.serializer.RefreshJweTokenSerializer;
-import org.mrshoffen.tasktracker.auth.service.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.text.ParseException;
 import java.time.Duration;
 
 @Configuration
-@RequiredArgsConstructor
-public class AuthenticationConfig {
-
-    private final JdbcTemplate jdbcTemplate;
-
+public class CommonConfiguration {
 
     @Bean
-    JwtService jwtService(@Value("${jwt-user.keys.refresh-token-key}") String refreshKey,
-                          @Value("${jwt-user.keys.access-token-key}") String accessKey,
-                          @Value("${jwt-user.ttl.refresh-ttl}") Duration refreshTtl,
-                          @Value("${jwt-user.ttl.access-ttl}") Duration accessTtl) throws ParseException, JOSEException {
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    JwtUtil jwtUtil(@Value("${jwt-user.keys.refresh-token-key}") String refreshKey,
+                    @Value("${jwt-user.keys.access-token-key}") String accessKey,
+                    @Value("${jwt-user.ttl.refresh-ttl}") Duration refreshTtl,
+                    @Value("${jwt-user.ttl.access-ttl}") Duration accessTtl) throws ParseException, JOSEException {
 
         var refreshTokenFactory = new RefreshJweTokenFactory(refreshTtl);
         var accessTokenFactory = new AccessJwsTokenFactory(accessTtl);
@@ -51,14 +52,11 @@ public class AuthenticationConfig {
                 JWSAlgorithm.HS256
         );
 
-        return new JwtService(refreshTokenFactory,
+        return new JwtUtil(refreshTokenFactory,
                 accessTokenFactory,
                 refreshTokenSerializer,
                 accessTokenSerializer,
-                refreshTokenDeserializer,
-                jdbcTemplate
+                refreshTokenDeserializer
         );
     }
-
-
 }

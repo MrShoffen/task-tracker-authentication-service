@@ -9,8 +9,6 @@ import org.mrshoffen.tasktracker.auth.jwt.JwtToken;
 
 import java.util.Date;
 
-import static org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties.UiService.LOGGER;
-
 @RequiredArgsConstructor
 @Slf4j
 public class RefreshJweTokenSerializer implements TokenSerializer {

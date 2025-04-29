@@ -3,11 +3,9 @@ package org.mrshoffen.tasktracker.auth.jwt.deserializer;
 import com.nimbusds.jose.*;
 import com.nimbusds.jwt.EncryptedJWT;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.mrshoffen.tasktracker.auth.exception.InvalidRefreshTokenException;
+import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidRefreshTokenException;
 import org.mrshoffen.tasktracker.auth.jwt.JwtToken;
 
-import java.text.ParseException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
