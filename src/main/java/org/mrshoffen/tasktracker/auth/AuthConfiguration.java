@@ -23,8 +23,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.text.ParseException;
 import java.time.Duration;
 
+import static org.springframework.util.StringUtils.trimLeadingCharacter;
+import static org.springframework.util.StringUtils.trimTrailingCharacter;
+
 @Configuration
-public class CommonConfiguration {
+public class AuthConfiguration {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -40,15 +43,17 @@ public class CommonConfiguration {
         var refreshTokenFactory = new RefreshJweTokenFactory(refreshTtl);
         var accessTokenFactory = new AccessJwsTokenFactory(accessTtl);
 
+        String fixedRKey = trimLeadingCharacter(trimTrailingCharacter(refreshKey, '\''), '\'');
         var refreshTokenSerializer = new RefreshJweTokenSerializer(
-                new DirectEncrypter(OctetSequenceKey.parse(refreshKey)),
+                new DirectEncrypter(OctetSequenceKey.parse(fixedRKey)),
                 JWEAlgorithm.DIR,
                 EncryptionMethod.A192GCM
         );
-        var refreshTokenDeserializer = new RefreshJweTokenDeserializer(new DirectDecrypter(OctetSequenceKey.parse(refreshKey)));
+        var refreshTokenDeserializer = new RefreshJweTokenDeserializer(new DirectDecrypter(OctetSequenceKey.parse(fixedRKey)));
 
+        String fixedAKey = trimLeadingCharacter(trimTrailingCharacter(accessKey, '\''), '\'');
         var accessTokenSerializer = new AccessJwsTokenSerializer(
-                new MACSigner(OctetSequenceKey.parse(accessKey)),
+                new MACSigner(OctetSequenceKey.parse(fixedAKey)),
                 JWSAlgorithm.HS256
         );
 
