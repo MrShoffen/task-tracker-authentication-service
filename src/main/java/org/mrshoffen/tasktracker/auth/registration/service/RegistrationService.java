@@ -38,7 +38,7 @@ public class RegistrationService {
     private final UnconfirmedRegistrationHolder registrationHolder;
 
     public void startUserRegistration(RegistrationRequestDto registrationDto, String ipAddr) {
-        if(registrationHolder.registrationInProgress(registrationDto.email())){
+        if (registrationHolder.registrationInProgress(registrationDto.email())) {
             throw new UnconfirmedRegistrationException("Email уже использован, но не подтвержден. Пройдите по ссылке из письма");
         }
 
@@ -60,7 +60,7 @@ public class RegistrationService {
         RegistrationAttemptEvent registrationAttempt = registrationHolder.findRegistrationAttempt(registrationId);
         registrationHolder.deleteRegistrationAttempt(registrationId);
 
-        var successfulRegistration = new RegistrationSuccessfulEvent(registrationAttempt.getRegistrationId());
+        var successfulRegistration = new RegistrationSuccessfulEvent(registrationAttempt.getRegistrationId(), registrationAttempt.getEmail());
         authEventPublisher.publishSuccessfulRegistrationEvent(successfulRegistration);
     }
 
