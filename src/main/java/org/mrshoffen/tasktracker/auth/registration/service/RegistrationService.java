@@ -2,22 +2,30 @@ package org.mrshoffen.tasktracker.auth.registration.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.mrshoffen.tasktracker.auth.authentication.exception.UnconfirmedRegistrationException;
 import org.mrshoffen.tasktracker.auth.event.AuthEventPublisher;
 import org.mrshoffen.tasktracker.auth.registration.dto.RegistrationRequestDto;
 import org.mrshoffen.tasktracker.auth.registration.exception.UserAlreadyExistsException;
+import org.mrshoffen.tasktracker.auth.util.UnconfirmedRegistrationHolder;
 import org.mrshoffen.tasktracker.auth.util.client.IpApiClient;
 import org.mrshoffen.tasktracker.auth.util.client.UserProfileClient;
-import org.mrshoffen.tasktracker.commons.kafka.event.auth.RegistrationAttemptEvent;
-import org.mrshoffen.tasktracker.commons.kafka.event.auth.RegistrationSuccessfulEvent;
+import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
+import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationSuccessfulEvent;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class RegistrationService {
+
+    @Value("${registration.max-confirmation-time}")
+    private Duration maxConfirmationTime;
 
     private final UserProfileClient userProfileClient;
 
@@ -27,9 +35,13 @@ public class RegistrationService {
 
     private final PasswordEncoder passwordEncoder;
 
-    private final UnconfirmedRegistrationService unconfirmedRegistrationService;
+    private final UnconfirmedRegistrationHolder registrationHolder;
 
     public void startUserRegistration(RegistrationRequestDto registrationDto, String ipAddr) {
+        if(registrationHolder.registrationInProgress(registrationDto.email())){
+            throw new UnconfirmedRegistrationException("Email уже использован, но не подтвержден. Пройдите по ссылке из письма");
+        }
+
         if (userProfileClient.userExists(registrationDto.email())) {
             throw new UserAlreadyExistsException("Пользователь %s уже зарегистрирован!"
                     .formatted(registrationDto.email()));
@@ -37,33 +49,33 @@ public class RegistrationService {
 
         IpApiClient.IpInfo ipInfo = ipApiClient.getIpInfo(ipAddr);
 
-        RegistrationAttemptEvent event = RegistrationAttemptEvent.builder()
-                .registrationId(UUID.randomUUID())
-                .email(registrationDto.email())
-                .hashedPassword(passwordEncoder.encode(registrationDto.password()))
-                .timeZone(ipInfo.getTimeZone())
-                .country(ipInfo.getCountry())
-                .region(ipInfo.getRegion())
-                .build();
+        RegistrationAttemptEvent event = buildRegistrationAttemptEvent(registrationDto, ipInfo);
 
-        unconfirmedRegistrationService.saveRegistrationAttempt(event);
+        registrationHolder.saveRegistrationAttempt(event, maxConfirmationTime);
 
         authEventPublisher.publishNewRegistrationEvent(event);
     }
 
     public void confirmUserRegistration(String registrationId) {
-        RegistrationAttemptEvent registrationAttempt = unconfirmedRegistrationService.findRegistrationAttempt(registrationId);
-        unconfirmedRegistrationService.deleteRegistrationAttempt(registrationId);
+        RegistrationAttemptEvent registrationAttempt = registrationHolder.findRegistrationAttempt(registrationId);
+        registrationHolder.deleteRegistrationAttempt(registrationId);
 
-        RegistrationSuccessfulEvent successfulRegistration = RegistrationSuccessfulEvent.builder()
-                .userId(UUID.randomUUID())
-                .email(registrationAttempt.getEmail())
-                .hashedPassword(registrationAttempt.getHashedPassword())
-                .timeZone(registrationAttempt.getTimeZone())
-                .country(registrationAttempt.getCountry())
-                .region(registrationAttempt.getRegion())
-                .build();
-
+        var successfulRegistration = new RegistrationSuccessfulEvent(registrationAttempt.getRegistrationId());
         authEventPublisher.publishSuccessfulRegistrationEvent(successfulRegistration);
+    }
+
+    private RegistrationAttemptEvent buildRegistrationAttemptEvent(RegistrationRequestDto registrationDto, IpApiClient.IpInfo ipInfo) {
+        return RegistrationAttemptEvent.builder()
+                .registrationId(UUID.randomUUID())
+                .email(registrationDto.email())
+                .hashedPassword(passwordEncoder.encode(registrationDto.password()))
+                .avatarUrl(registrationDto.avatarUrl())
+                .firstName(registrationDto.firstName())
+                .lastName(registrationDto.lastName())
+                .timeZone(ipInfo.getTimeZone())
+                .country(ipInfo.getCountry())
+                .region(ipInfo.getRegion())
+                .validUntil(Instant.now().plus(maxConfirmationTime))
+                .build();
     }
 }

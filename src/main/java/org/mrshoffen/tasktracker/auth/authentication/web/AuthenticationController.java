@@ -5,9 +5,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.dto.LoginDto;
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidRefreshTokenException;
+import org.mrshoffen.tasktracker.auth.authentication.exception.UnconfirmedRegistrationException;
 import org.mrshoffen.tasktracker.auth.authentication.service.AuthenticationService;
 import org.mrshoffen.tasktracker.auth.jwt.JwtUtil;
 import org.mrshoffen.tasktracker.auth.util.CookieUtil;
+import org.mrshoffen.tasktracker.auth.util.UnconfirmedRegistrationHolder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -30,6 +32,8 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
+    private final UnconfirmedRegistrationHolder unconfirmedRegistrationHolder;
+
     @Value("${jwt-user.ttl.refresh-ttl}")
     private Duration refreshTtl;
 
@@ -38,6 +42,11 @@ public class AuthenticationController {
 
     @PostMapping("/sign-in")
     public ResponseEntity<Void> login(@Valid @RequestBody LoginDto loginDto) {
+        if (unconfirmedRegistrationHolder.registrationInProgress(loginDto.email())) {
+            throw new UnconfirmedRegistrationException("Данный email не подтвержден. Пройдите по ссылке, которую прислали в ссылке");
+        }
+
+
         authenticationService.validateCredentialsAndGetUserId(loginDto);
         String userId = authenticationService.getUserId(loginDto.email());
 

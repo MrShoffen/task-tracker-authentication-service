@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidCredentialsException;
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidRefreshTokenException;
 import org.mrshoffen.tasktracker.auth.authentication.exception.RefreshTokenExpiredException;
+import org.mrshoffen.tasktracker.auth.authentication.exception.UnconfirmedRegistrationException;
 import org.mrshoffen.tasktracker.auth.registration.exception.EmailUnconfirmedException;
 import org.mrshoffen.tasktracker.auth.registration.exception.UserAlreadyExistsException;
 import org.mrshoffen.tasktracker.auth.util.CookieUtil;
@@ -61,6 +62,12 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     public ResponseEntity<ProblemDetail> handleEmailUnconfirmedException(EmailUnconfirmedException e) {
         ProblemDetail problem = generateProblemDetail(CONFLICT, e.getMessage());
         return ResponseEntity.status(CONFLICT).body(problem);
+    }
+
+    @ExceptionHandler(UnconfirmedRegistrationException.class)
+    public ResponseEntity<ProblemDetail> handleUnconfirmedRegistrationException(UnconfirmedRegistrationException e) {
+        ProblemDetail problem = generateProblemDetail(OK, e.getMessage());
+        return ResponseEntity.status(OK).body(problem);
     }
 
     private ProblemDetail generateProblemDetail(HttpStatus status, String detail) {

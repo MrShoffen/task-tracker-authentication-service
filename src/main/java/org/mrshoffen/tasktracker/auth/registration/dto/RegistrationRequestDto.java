@@ -11,6 +11,10 @@ public record RegistrationRequestDto(
         @ValidPassword
         String password,
 
-        String avatarUrl
+        String avatarUrl, //todo add validation
+
+        String firstName,
+
+        String lastName
 ) {
 }

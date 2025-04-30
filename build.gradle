@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'org.mrshoffen.tasktracker'
-version = '1.0.1'
+version = '1.1.0'
 
 java {
     toolchain {
@@ -18,8 +18,8 @@ repositories {
 }
 
 dependencies {
-    implementation platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.5.1')
-    annotationProcessor platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.5.1')
+    implementation platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.5.4')
+    annotationProcessor platform('com.github.MrShoffen:task-tracker-dependencies-versions:1.5.4')
 
     implementation 'com.github.MrShoffen:task-tracker-commons'
 
@@ -37,6 +37,7 @@ dependencies {
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
+
 
     implementation 'com.nimbusds:nimbus-jose-jwt'
 

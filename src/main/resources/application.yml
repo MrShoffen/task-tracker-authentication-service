@@ -23,6 +23,9 @@ kafka-user:
   bootstrap-servers: 192.168.0.125:29092,192.168.0.125:39092,192.168.0.125:49092
 ###
 
+registration:
+  max-confirmation-time: 10m
+
 
 spring:
   application:
