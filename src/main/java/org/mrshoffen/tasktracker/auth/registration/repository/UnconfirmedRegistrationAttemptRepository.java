@@ -1,4 +1,4 @@
-package org.mrshoffen.tasktracker.auth.util;
+package org.mrshoffen.tasktracker.auth.registration.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -14,25 +14,27 @@ import java.util.Optional;
 @Component
 @AllArgsConstructor
 @Slf4j
-public class UnconfirmedRegistrationHolder {
+public class UnconfirmedRegistrationAttemptRepository {
+
+    private static final String UNCONFIRMED_REG_PREFIX_KEY = "unconfirmed:";
 
     private final StringRedisTemplate redisTemplate;
 
     private final ObjectMapper objectMapper;
 
     @SneakyThrows
-    public void saveRegistrationAttempt(RegistrationAttemptEvent event, Duration saveDuration) {
+    public void save(RegistrationAttemptEvent event, Duration saveDuration) {
         String json = objectMapper.writeValueAsString(event);
         redisTemplate.opsForValue().set(
                 "unconfirmed:" + event.getRegistrationId(),
                 json,
                 saveDuration
         );
-        redisTemplate.opsForValue().set(event.getEmail(), "unconfirmed", saveDuration);
+        redisTemplate.opsForValue().set(UNCONFIRMED_REG_PREFIX_KEY + event.getEmail(), "", saveDuration);
     }
 
-    public Optional<RegistrationAttemptEvent> findRegistrationAttempt(String registrationId) {
-        String json = redisTemplate.opsForValue().get("unconfirmed:" + registrationId);
+    public Optional<RegistrationAttemptEvent> findById(String registrationId) {
+        String json = redisTemplate.opsForValue().get(UNCONFIRMED_REG_PREFIX_KEY + registrationId);
         try {
             RegistrationAttemptEvent attempt = objectMapper.readValue(json, RegistrationAttemptEvent.class);
             return Optional.of(attempt);
@@ -41,9 +43,9 @@ public class UnconfirmedRegistrationHolder {
         }
     }
 
-    public void deleteRegistrationAttempt(RegistrationAttemptEvent attempt) {
-        redisTemplate.delete("unconfirmed:" + attempt.getRegistrationId());
-        redisTemplate.delete(attempt.getEmail());
+    public void delete(RegistrationAttemptEvent attempt) {
+        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + attempt.getRegistrationId());
+        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + attempt.getEmail());
     }
 
     public boolean emailUnconfirmed(String email) {

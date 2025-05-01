@@ -30,7 +30,7 @@ public class AuthEventPublisher {
     }
 
     public void publishSuccessfulAuthenticationEvent(AuthenticationSuccessfulEvent event) {
-        kafkaTemplate.send(AuthenticationSuccessfulEvent.TOPIC, event.getRegistrationId(), event);
+        kafkaTemplate.send(AuthenticationSuccessfulEvent.TOPIC, event.getUserId(), event);
         log.info("Event published to kafka topic '{}' - {}", AuthenticationSuccessfulEvent.TOPIC, event);
     }
 

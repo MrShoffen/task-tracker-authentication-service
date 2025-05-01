@@ -10,6 +10,8 @@ import org.mrshoffen.tasktracker.auth.util.client.UserProfileClient;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @RequiredArgsConstructor
 @Slf4j
 @Service
@@ -34,7 +36,12 @@ public class AuthenticationService {
     }
 
     public String getUserId(String email) {
-        return userProfileClient.userId(email);
+        try {
+            return userProfileClient.userId(email);
+        } catch (FeignException.NotFound ex) {
+            throw new InvalidCredentialsException("Неверный логин или пароль");
+
+        }
     }
 
 

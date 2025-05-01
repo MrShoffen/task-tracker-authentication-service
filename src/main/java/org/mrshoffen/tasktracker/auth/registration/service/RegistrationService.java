@@ -1,12 +1,13 @@
 package org.mrshoffen.tasktracker.auth.registration.service;
 
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.exception.UnconfirmedRegistrationException;
 import org.mrshoffen.tasktracker.auth.event.AuthEventPublisher;
 import org.mrshoffen.tasktracker.auth.registration.dto.RegistrationRequestDto;
 import org.mrshoffen.tasktracker.auth.registration.exception.UserAlreadyExistsException;
-import org.mrshoffen.tasktracker.auth.util.UnconfirmedRegistrationHolder;
+import org.mrshoffen.tasktracker.auth.registration.repository.UnconfirmedRegistrationAttemptRepository;
 import org.mrshoffen.tasktracker.auth.util.client.IpApiClient;
 import org.mrshoffen.tasktracker.auth.util.client.UserProfileClient;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -38,12 +40,13 @@ public class RegistrationService {
 
     private final PasswordEncoder passwordEncoder;
 
-    private final UnconfirmedRegistrationHolder registrationHolder;
+    private final UnconfirmedRegistrationAttemptRepository unconfirmedRegRepo;
 
     public void startUserRegistration(RegistrationRequestDto registrationDto, String ipAddr) {
-        if (registrationHolder.emailUnconfirmed(registrationDto.email())) {
+        if (unconfirmedRegRepo.emailUnconfirmed(registrationDto.email())) {
             throw new UnconfirmedRegistrationException("Email уже использован, но не подтвержден. Пройдите по ссылке из письма");
         }
+
         if (userProfileClient.userExists(registrationDto.email())) {
             throw new UserAlreadyExistsException("Пользователь %s уже зарегистрирован!"
                     .formatted(registrationDto.email()));
@@ -53,15 +56,16 @@ public class RegistrationService {
 
         RegistrationAttemptEvent event = buildRegistrationAttemptEvent(registrationDto, ipInfo);
         authEventPublisher.publishNewRegistrationEvent(event);
-        registrationHolder.saveRegistrationAttempt(event, maxConfirmationTime);
+
+        unconfirmedRegRepo.save(event, maxConfirmationTime);
     }
 
     public void confirmUserRegistration(String registrationId) {
-        RegistrationAttemptEvent registrationAttempt = registrationHolder.findRegistrationAttempt(registrationId)
+        RegistrationAttemptEvent registrationAttempt = unconfirmedRegRepo.findById(registrationId)
                 .orElseThrow(() ->
                         new UnconfirmedRegistrationException("Некорректная ссылка для подтверждения почты"));
 
-        registrationHolder.deleteRegistrationAttempt(registrationAttempt);
+        unconfirmedRegRepo.delete(registrationAttempt);
 
         var successfulRegistration = new RegistrationSuccessfulEvent(registrationAttempt.getRegistrationId(), registrationAttempt.getEmail());
         authEventPublisher.publishSuccessfulRegistrationEvent(successfulRegistration);
