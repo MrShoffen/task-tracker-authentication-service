@@ -1,13 +1,13 @@
-package org.mrshoffen.tasktracker.auth.jwt;
+package org.mrshoffen.tasktracker.auth.util.jwt;
 
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidRefreshTokenException;
 import org.mrshoffen.tasktracker.auth.authentication.exception.RefreshTokenExpiredException;
-import org.mrshoffen.tasktracker.auth.jwt.deserializer.TokenDeserializer;
-import org.mrshoffen.tasktracker.auth.jwt.factory.TokenFactory;
-import org.mrshoffen.tasktracker.auth.jwt.serializer.TokenSerializer;
+import org.mrshoffen.tasktracker.auth.util.jwt.deserializer.TokenDeserializer;
+import org.mrshoffen.tasktracker.auth.util.jwt.factory.TokenFactory;
+import org.mrshoffen.tasktracker.auth.util.jwt.serializer.TokenSerializer;
 
 import java.time.Instant;
 import java.util.Map;
@@ -39,7 +39,5 @@ public class JwtUtil {
         JwtToken accessToken = accessTokenFactory.generateToken(deserializedRefreshToken);
         return accessTokenSerializer.serialize(accessToken);
     }
-
-
 
 }

@@ -1,7 +1,7 @@
-package org.mrshoffen.tasktracker.auth.jwt.factory;
+package org.mrshoffen.tasktracker.auth.util.jwt.factory;
 
 import lombok.RequiredArgsConstructor;
-import org.mrshoffen.tasktracker.auth.jwt.JwtToken;
+import org.mrshoffen.tasktracker.auth.util.jwt.JwtToken;
 
 import java.time.Duration;
 import java.time.Instant;

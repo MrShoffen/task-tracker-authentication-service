@@ -31,7 +31,7 @@ public class RegistrationController {
     }
 
     @GetMapping("/sign-up")
-    ResponseEntity<Map<String,String>> continueUserRegistration(@RequestParam("confirm") String registrationId) {
+    ResponseEntity<Map<String,String>> confirmUserRegistration(@RequestParam("confirm") String registrationId) {
 
         registrationService.confirmUserRegistration(registrationId);
         return ResponseEntity.status(HttpStatus.CREATED)

@@ -6,9 +6,9 @@ import org.springframework.http.ResponseCookie;
 import java.time.Duration;
 
 @UtilityClass
-public class CookieUtil {
+public class CookieBuilderUtil {
 
-    public static ResponseCookie clearCookie(String cookieName) {
+    public static ResponseCookie clear(String cookieName) {
         return ResponseCookie
                 .from(cookieName, "")
                 .path("/")
@@ -16,7 +16,7 @@ public class CookieUtil {
                 .build();
     }
 
-    public static ResponseCookie buildCookie(String cookieName, String cookieValue, Duration maxAge) {
+    public static ResponseCookie withNameAndValue(String cookieName, String cookieValue, Duration maxAge) {
         return ResponseCookie
                 .from(cookieName, cookieValue)
                 .maxAge(maxAge)

@@ -25,6 +25,7 @@ kafka-user:
 
 registration:
   max-confirmation-time: 10m
+  confirmation-link-prefix: /auth/sign-up?confirm=%s
 
 
 spring:

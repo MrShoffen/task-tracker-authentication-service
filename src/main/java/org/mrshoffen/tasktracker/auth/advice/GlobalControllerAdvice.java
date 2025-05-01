@@ -5,9 +5,8 @@ import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidCredential
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidRefreshTokenException;
 import org.mrshoffen.tasktracker.auth.authentication.exception.RefreshTokenExpiredException;
 import org.mrshoffen.tasktracker.auth.authentication.exception.UnconfirmedRegistrationException;
-import org.mrshoffen.tasktracker.auth.registration.exception.EmailUnconfirmedException;
 import org.mrshoffen.tasktracker.auth.registration.exception.UserAlreadyExistsException;
-import org.mrshoffen.tasktracker.auth.util.CookieUtil;
+import org.mrshoffen.tasktracker.auth.util.CookieBuilderUtil;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -42,8 +41,8 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
     public ResponseEntity<ProblemDetail> handleRefreshTokenExpired(Exception e) {
         log.warn("Exception occured: {}", e.getMessage());
 
-        ResponseCookie refreshTokenCookie = CookieUtil.clearCookie(REFRESH_TOKEN_COOKIE_NAME);
-        ResponseCookie accessTokenCookie = CookieUtil.clearCookie(ACCESS_TOKEN_COOKIE_NAME);
+        ResponseCookie refreshTokenCookie = CookieBuilderUtil.clear(REFRESH_TOKEN_COOKIE_NAME);
+        ResponseCookie accessTokenCookie = CookieBuilderUtil.clear(ACCESS_TOKEN_COOKIE_NAME);
 
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, e.getMessage());
 
@@ -58,11 +57,6 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(CONFLICT).body(problem);
     }
 
-    @ExceptionHandler(EmailUnconfirmedException.class)
-    public ResponseEntity<ProblemDetail> handleEmailUnconfirmedException(EmailUnconfirmedException e) {
-        ProblemDetail problem = generateProblemDetail(CONFLICT, e.getMessage());
-        return ResponseEntity.status(CONFLICT).body(problem);
-    }
 
     @ExceptionHandler(UnconfirmedRegistrationException.class)
     public ResponseEntity<ProblemDetail> handleUnconfirmedRegistrationException(UnconfirmedRegistrationException e) {

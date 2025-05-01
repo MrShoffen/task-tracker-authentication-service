@@ -1,27 +1,30 @@
-package org.mrshoffen.tasktracker.auth.jwt.serializer;
+package org.mrshoffen.tasktracker.auth.util.jwt.serializer;
 
 import com.nimbusds.jose.*;
+import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.mrshoffen.tasktracker.auth.jwt.JwtToken;
+import org.mrshoffen.tasktracker.auth.util.jwt.JwtToken;
 
 import java.util.Date;
 
 @RequiredArgsConstructor
 @Slf4j
-public class AccessJwsTokenSerializer implements TokenSerializer {
+public class RefreshJweTokenSerializer implements TokenSerializer {
 
-    private final JWSSigner jwsSigner;
+    private final JWEEncrypter jweEncrypter;
 
-    private final JWSAlgorithm jwsAlgorithm;// = JWSAlgorithm.HS256;
+    private final  JWEAlgorithm jweAlgorithm;// = JWEAlgorithm.DIR;
+
+    private final EncryptionMethod encryptionMethod; // = EncryptionMethod.A128GCM;
 
     @Override
     public String serialize(JwtToken token) {
-        var jwsHeader = new JWSHeader.Builder(this.jwsAlgorithm)
+        var jwsHeader = new JWEHeader.Builder(this.jweAlgorithm, this.encryptionMethod)
                 .keyID(token.id().toString())
                 .build();
+
         var preBuildClaims = new JWTClaimsSet.Builder()
                 .jwtID(token.id().toString())
                 .subject(token.id().toString())
@@ -30,11 +33,12 @@ public class AccessJwsTokenSerializer implements TokenSerializer {
 
         token.payload().forEach(preBuildClaims::claim);
 
-        var signedJWT = new SignedJWT(jwsHeader, preBuildClaims.build());
-        try {
-            signedJWT.sign(this.jwsSigner);
 
-            return signedJWT.serialize();
+        var encryptedJWT = new EncryptedJWT(jwsHeader, preBuildClaims.build());
+        try {
+            encryptedJWT.encrypt(this.jweEncrypter);
+
+            return encryptedJWT.serialize();
         } catch (JOSEException exception) {
             log.error(exception.getMessage(), exception);
         }

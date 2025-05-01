@@ -4,12 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.mrshoffen.tasktracker.auth.registration.exception.EmailUnconfirmedException;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.Optional;
 
 @Component
 @AllArgsConstructor
@@ -31,22 +31,22 @@ public class UnconfirmedRegistrationHolder {
         redisTemplate.opsForValue().set(event.getEmail(), "unconfirmed", saveDuration);
     }
 
-    public RegistrationAttemptEvent findRegistrationAttempt(String registrationId) {
+    public Optional<RegistrationAttemptEvent> findRegistrationAttempt(String registrationId) {
         String json = redisTemplate.opsForValue().get("unconfirmed:" + registrationId);
         try {
             RegistrationAttemptEvent attempt = objectMapper.readValue(json, RegistrationAttemptEvent.class);
-            redisTemplate.delete(attempt.getEmail());
-            return attempt;
+            return Optional.of(attempt);
         } catch (Exception e) {
-            throw new EmailUnconfirmedException("Не удалось подтвердить почту - некорректная ссылка подтверждения", e);
+            return Optional.empty();
         }
     }
 
-    public void deleteRegistrationAttempt(String registrationId) {
-        redisTemplate.delete("unconfirmed:" + registrationId);
+    public void deleteRegistrationAttempt(RegistrationAttemptEvent attempt) {
+        redisTemplate.delete("unconfirmed:" + attempt.getRegistrationId());
+        redisTemplate.delete(attempt.getEmail());
     }
 
-    public boolean registrationInProgress(String email) {
+    public boolean emailUnconfirmed(String email) {
         String registration = redisTemplate.opsForValue().get(email);
         return registration != null;
     }

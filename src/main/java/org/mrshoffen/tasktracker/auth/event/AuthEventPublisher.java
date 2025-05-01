@@ -2,6 +2,7 @@ package org.mrshoffen.tasktracker.auth.event;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.mrshoffen.tasktracker.commons.kafka.event.authentication.AuthenticationSuccessfulEvent;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationSuccessfulEvent;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -26,6 +27,11 @@ public class AuthEventPublisher {
         kafkaTemplate.send(RegistrationSuccessfulEvent.TOPIC, event.getRegistrationId(), event);
         log.info("Event published to kafka topic '{}' - {}", RegistrationSuccessfulEvent.TOPIC, event);
 
+    }
+
+    public void publishSuccessfulAuthenticationEvent(AuthenticationSuccessfulEvent event) {
+        kafkaTemplate.send(AuthenticationSuccessfulEvent.TOPIC, event.getRegistrationId(), event);
+        log.info("Event published to kafka topic '{}' - {}", AuthenticationSuccessfulEvent.TOPIC, event);
     }
 
 }

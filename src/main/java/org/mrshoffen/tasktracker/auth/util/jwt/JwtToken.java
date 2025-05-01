@@ -1,4 +1,4 @@
-package org.mrshoffen.tasktracker.auth.jwt;
+package org.mrshoffen.tasktracker.auth.util.jwt;
 
 import java.time.Instant;
 import java.util.Map;

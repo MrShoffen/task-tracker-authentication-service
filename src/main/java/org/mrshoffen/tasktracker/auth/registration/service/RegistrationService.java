@@ -27,6 +27,9 @@ public class RegistrationService {
     @Value("${registration.max-confirmation-time}")
     private Duration maxConfirmationTime;
 
+    @Value("${registration.confirmation-link-prefix}")
+    private String confirmationLinkPrefix;
+
     private final UserProfileClient userProfileClient;
 
     private final IpApiClient ipApiClient;
@@ -38,10 +41,9 @@ public class RegistrationService {
     private final UnconfirmedRegistrationHolder registrationHolder;
 
     public void startUserRegistration(RegistrationRequestDto registrationDto, String ipAddr) {
-        if (registrationHolder.registrationInProgress(registrationDto.email())) {
+        if (registrationHolder.emailUnconfirmed(registrationDto.email())) {
             throw new UnconfirmedRegistrationException("Email уже использован, но не подтвержден. Пройдите по ссылке из письма");
         }
-
         if (userProfileClient.userExists(registrationDto.email())) {
             throw new UserAlreadyExistsException("Пользователь %s уже зарегистрирован!"
                     .formatted(registrationDto.email()));
@@ -50,23 +52,26 @@ public class RegistrationService {
         IpApiClient.IpInfo ipInfo = ipApiClient.getIpInfo(ipAddr);
 
         RegistrationAttemptEvent event = buildRegistrationAttemptEvent(registrationDto, ipInfo);
-
-        registrationHolder.saveRegistrationAttempt(event, maxConfirmationTime);
-
         authEventPublisher.publishNewRegistrationEvent(event);
+        registrationHolder.saveRegistrationAttempt(event, maxConfirmationTime);
     }
 
     public void confirmUserRegistration(String registrationId) {
-        RegistrationAttemptEvent registrationAttempt = registrationHolder.findRegistrationAttempt(registrationId);
-        registrationHolder.deleteRegistrationAttempt(registrationId);
+        RegistrationAttemptEvent registrationAttempt = registrationHolder.findRegistrationAttempt(registrationId)
+                .orElseThrow(() ->
+                        new UnconfirmedRegistrationException("Некорректная ссылка для подтверждения почты"));
+
+        registrationHolder.deleteRegistrationAttempt(registrationAttempt);
 
         var successfulRegistration = new RegistrationSuccessfulEvent(registrationAttempt.getRegistrationId(), registrationAttempt.getEmail());
         authEventPublisher.publishSuccessfulRegistrationEvent(successfulRegistration);
     }
 
     private RegistrationAttemptEvent buildRegistrationAttemptEvent(RegistrationRequestDto registrationDto, IpApiClient.IpInfo ipInfo) {
+        UUID registrationId = UUID.randomUUID();
         return RegistrationAttemptEvent.builder()
-                .registrationId(UUID.randomUUID())
+                .registrationId(registrationId)
+                .confirmationLink(confirmationLinkPrefix.formatted(registrationId.toString()))
                 .email(registrationDto.email())
                 .hashedPassword(passwordEncoder.encode(registrationDto.password()))
                 .avatarUrl(registrationDto.avatarUrl())

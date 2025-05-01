@@ -7,11 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.dto.LoginDto;
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidCredentialsException;
 import org.mrshoffen.tasktracker.auth.util.client.UserProfileClient;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.time.Duration;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -20,11 +17,9 @@ public class AuthenticationService {
 
     private final UserProfileClient userProfileClient;
 
-    private final StringRedisTemplate redisTemplate;
-
     private final PasswordEncoder passwordEncoder;
 
-    public void validateCredentialsAndGetUserId(LoginDto loginDto) {
+    public void validateUserCredentials(LoginDto loginDto) {
         try {
             log.info("Attempt to authenticate - trying to validate user in user-profile-ws {}", loginDto);
             String hashedPassword = userProfileClient.userHashedPassword(loginDto.email());
@@ -38,19 +33,9 @@ public class AuthenticationService {
         }
     }
 
-    public String getUserId(String email){
+    public String getUserId(String email) {
         return userProfileClient.userId(email);
     }
 
-    public void addTokenToBlackList(String token, Duration ttl) {
-        redisTemplate.opsForValue()
-                .set("blacklist:" + token,
-                        "logged_out",
-                        ttl);
-    }
-
-    public boolean tokenInBlackList(String token) {
-        return Boolean.TRUE.equals(redisTemplate.hasKey("blacklist:" + token));
-    }
 
 }

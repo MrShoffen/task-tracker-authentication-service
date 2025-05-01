@@ -1,30 +1,27 @@
-package org.mrshoffen.tasktracker.auth.jwt.serializer;
+package org.mrshoffen.tasktracker.auth.util.jwt.serializer;
 
 import com.nimbusds.jose.*;
-import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.mrshoffen.tasktracker.auth.jwt.JwtToken;
+import org.mrshoffen.tasktracker.auth.util.jwt.JwtToken;
 
 import java.util.Date;
 
 @RequiredArgsConstructor
 @Slf4j
-public class RefreshJweTokenSerializer implements TokenSerializer {
+public class AccessJwsTokenSerializer implements TokenSerializer {
 
-    private final JWEEncrypter jweEncrypter;
+    private final JWSSigner jwsSigner;
 
-    private final  JWEAlgorithm jweAlgorithm;// = JWEAlgorithm.DIR;
-
-    private final EncryptionMethod encryptionMethod; // = EncryptionMethod.A128GCM;
+    private final JWSAlgorithm jwsAlgorithm;// = JWSAlgorithm.HS256;
 
     @Override
     public String serialize(JwtToken token) {
-        var jwsHeader = new JWEHeader.Builder(this.jweAlgorithm, this.encryptionMethod)
+        var jwsHeader = new JWSHeader.Builder(this.jwsAlgorithm)
                 .keyID(token.id().toString())
                 .build();
-
         var preBuildClaims = new JWTClaimsSet.Builder()
                 .jwtID(token.id().toString())
                 .subject(token.id().toString())
@@ -33,12 +30,11 @@ public class RefreshJweTokenSerializer implements TokenSerializer {
 
         token.payload().forEach(preBuildClaims::claim);
 
-
-        var encryptedJWT = new EncryptedJWT(jwsHeader, preBuildClaims.build());
+        var signedJWT = new SignedJWT(jwsHeader, preBuildClaims.build());
         try {
-            encryptedJWT.encrypt(this.jweEncrypter);
+            signedJWT.sign(this.jwsSigner);
 
-            return encryptedJWT.serialize();
+            return signedJWT.serialize();
         } catch (JOSEException exception) {
             log.error(exception.getMessage(), exception);
         }
