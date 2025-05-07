@@ -53,7 +53,7 @@ public class AuthenticationController {
     public ResponseEntity<Void> login(@Valid @RequestBody LoginDto loginDto,
                                       @RequestHeader(value = "X-Forwarded-For", required = false) String userIp) {
         if (unconfirmedRegistrationHolder.emailUnconfirmed(loginDto.email())) {
-            throw new UnconfirmedRegistrationException("Данный email не подтвержден. Пройдите по ссылке, которую прислали в ссылке");
+            throw new UnconfirmedRegistrationException("Данный email не подтвержден. Пройдите по ссылке, которую прислали в письме");
         }
 
         authenticationService.validateUserCredentials(loginDto);

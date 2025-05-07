@@ -26,7 +26,7 @@ public class UnconfirmedRegistrationAttemptRepository {
     public void save(RegistrationAttemptEvent event, Duration saveDuration) {
         String json = objectMapper.writeValueAsString(event);
         redisTemplate.opsForValue().set(
-                "unconfirmed:" + event.getRegistrationId(),
+                UNCONFIRMED_REG_PREFIX_KEY + event.getRegistrationId(),
                 json,
                 saveDuration
         );
@@ -49,7 +49,7 @@ public class UnconfirmedRegistrationAttemptRepository {
     }
 
     public boolean emailUnconfirmed(String email) {
-        String registration = redisTemplate.opsForValue().get(email);
+        String registration = redisTemplate.opsForValue().get(UNCONFIRMED_REG_PREFIX_KEY + email);
         return registration != null;
     }
 }
