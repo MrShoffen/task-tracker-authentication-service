@@ -15,24 +15,20 @@ discovery-service-user:
   server:
     hostname: localhost #discovery-user profile property
     port: 8010 #discovery-user profile properdiscovery
-  credentials:
-    username: user
-    password: pass
 #
 kafka-user:
   bootstrap-servers: 192.168.0.125:29092,192.168.0.125:39092,192.168.0.125:49092
 ###
 
-registration:
-  max-confirmation-time: 10m
-  confirmation-link-prefix: /auth/sign-up?confirm=%s
+app:
+  registration:
+    max-confirmation-time: 10m
+    confirmation-link-prefix: /auth/sign-up?confirm=%s
 
 
 spring:
   application:
     name: authentication-ws
-  profiles:
-    active: discovery-service-user, redis-user, jwt-user, kafka-user
   config:
     import: optional:configserver:http://${CONFIG_SERVER_USER}:${CONFIG_SERVER_PASSWORD}@${CONFIG_SERVER_HOST:localhost}:${CONFIG_SERVER_PORT:8012}
 

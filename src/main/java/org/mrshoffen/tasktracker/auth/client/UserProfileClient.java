@@ -1,4 +1,4 @@
-package org.mrshoffen.tasktracker.auth.util.client;
+package org.mrshoffen.tasktracker.auth.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;

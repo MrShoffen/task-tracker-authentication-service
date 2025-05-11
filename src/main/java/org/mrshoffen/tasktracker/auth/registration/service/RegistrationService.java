@@ -1,15 +1,15 @@
 package org.mrshoffen.tasktracker.auth.registration.service;
 
-import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.exception.UnconfirmedRegistrationException;
 import org.mrshoffen.tasktracker.auth.event.AuthEventPublisher;
+import org.mrshoffen.tasktracker.auth.mapper.RegistrationMapper;
 import org.mrshoffen.tasktracker.auth.registration.dto.RegistrationRequestDto;
 import org.mrshoffen.tasktracker.auth.registration.exception.UserAlreadyExistsException;
 import org.mrshoffen.tasktracker.auth.registration.repository.UnconfirmedRegistrationAttemptRepository;
-import org.mrshoffen.tasktracker.auth.util.client.IpApiClient;
-import org.mrshoffen.tasktracker.auth.util.client.UserProfileClient;
+import org.mrshoffen.tasktracker.auth.client.IpApiClient;
+import org.mrshoffen.tasktracker.auth.client.UserProfileClient;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationSuccessfulEvent;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -26,10 +25,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RegistrationService {
 
-    @Value("${registration.max-confirmation-time}")
+    @Value("${app.registration.max-confirmation-time}")
     private Duration maxConfirmationTime;
 
-    @Value("${registration.confirmation-link-prefix}")
+    @Value("${app.registration.confirmation-link-prefix}")
     private String confirmationLinkPrefix;
 
     private final UserProfileClient userProfileClient;
@@ -41,6 +40,8 @@ public class RegistrationService {
     private final PasswordEncoder passwordEncoder;
 
     private final UnconfirmedRegistrationAttemptRepository unconfirmedRegRepo;
+
+    private final RegistrationMapper registrationMapper;
 
     public void startUserRegistration(RegistrationRequestDto registrationDto, String ipAddr) {
         if (unconfirmedRegRepo.emailUnconfirmed(registrationDto.email())) {
@@ -67,9 +68,10 @@ public class RegistrationService {
 
         unconfirmedRegRepo.delete(registrationAttempt);
 
-        var successfulRegistration = new RegistrationSuccessfulEvent(registrationAttempt.getRegistrationId(), registrationAttempt.getEmail());
+        var successfulRegistration = registrationMapper.buildSuccessfulRegistrationEvent(registrationAttempt);
         authEventPublisher.publishSuccessfulRegistrationEvent(successfulRegistration);
     }
+
 
     private RegistrationAttemptEvent buildRegistrationAttemptEvent(RegistrationRequestDto registrationDto, IpApiClient.IpInfo ipInfo) {
         UUID registrationId = UUID.randomUUID();

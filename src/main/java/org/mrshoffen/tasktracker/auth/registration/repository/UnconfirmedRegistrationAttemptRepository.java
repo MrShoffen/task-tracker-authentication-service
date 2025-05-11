@@ -30,7 +30,7 @@ public class UnconfirmedRegistrationAttemptRepository {
                 json,
                 saveDuration
         );
-        redisTemplate.opsForValue().set(UNCONFIRMED_REG_PREFIX_KEY + event.getEmail(), "", saveDuration);
+        redisTemplate.opsForValue().set(UNCONFIRMED_REG_PREFIX_KEY + event.getEmail().toLowerCase(), "", saveDuration);
     }
 
     public Optional<RegistrationAttemptEvent> findById(String registrationId) {
@@ -49,7 +49,7 @@ public class UnconfirmedRegistrationAttemptRepository {
     }
 
     public boolean emailUnconfirmed(String email) {
-        String registration = redisTemplate.opsForValue().get(UNCONFIRMED_REG_PREFIX_KEY + email);
+        String registration = redisTemplate.opsForValue().get(UNCONFIRMED_REG_PREFIX_KEY + email.toLowerCase());
         return registration != null;
     }
 }

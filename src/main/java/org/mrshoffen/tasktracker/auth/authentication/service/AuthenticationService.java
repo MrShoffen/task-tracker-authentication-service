@@ -6,11 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.dto.LoginDto;
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidCredentialsException;
-import org.mrshoffen.tasktracker.auth.util.client.UserProfileClient;
+import org.mrshoffen.tasktracker.auth.client.UserProfileClient;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @RequiredArgsConstructor
 @Slf4j
