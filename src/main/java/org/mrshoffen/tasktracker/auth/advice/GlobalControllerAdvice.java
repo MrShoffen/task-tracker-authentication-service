@@ -35,8 +35,7 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
                 .body(problemDetail);
     }
 
-    @ExceptionHandler({InvalidCredentialsException.class,
-            RefreshTokenExpiredException.class,
+    @ExceptionHandler({RefreshTokenExpiredException.class,
             InvalidRefreshTokenException.class})
     public ResponseEntity<ProblemDetail> handleRefreshTokenExpired(Exception e) {
         log.warn("Exception occured: {}", e.getMessage());
@@ -51,6 +50,14 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
                 .body(problem);
     }
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCreds(InvalidCredentialsException e) {
+        log.warn("Exception occured: {}", e.getMessage());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(UNAUTHORIZED, e.getMessage());
+        return ResponseEntity.status(UNAUTHORIZED)
+                .body(problem);
+    }
+
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ProblemDetail> handleUserAlreadyExistException(UserAlreadyExistsException e) {
         ProblemDetail problem = generateProblemDetail(CONFLICT, e.getMessage());
@@ -60,8 +67,8 @@ public class GlobalControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(UnconfirmedRegistrationException.class)
     public ResponseEntity<ProblemDetail> handleUnconfirmedRegistrationException(UnconfirmedRegistrationException e) {
-        ProblemDetail problem = generateProblemDetail(OK, e.getMessage());
-        return ResponseEntity.status(OK).body(problem);
+        ProblemDetail problem = generateProblemDetail(UNAUTHORIZED, e.getMessage());
+        return ResponseEntity.status(UNAUTHORIZED).body(problem);
     }
 
     private ProblemDetail generateProblemDetail(HttpStatus status, String detail) {

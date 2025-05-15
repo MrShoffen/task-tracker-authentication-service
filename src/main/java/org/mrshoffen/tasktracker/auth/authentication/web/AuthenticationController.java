@@ -4,7 +4,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.auth.authentication.dto.LoginDto;
-import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidCredentialsException;
 import org.mrshoffen.tasktracker.auth.authentication.exception.InvalidRefreshTokenException;
 import org.mrshoffen.tasktracker.auth.authentication.exception.UnconfirmedRegistrationException;
 import org.mrshoffen.tasktracker.auth.authentication.service.AuthenticationService;
@@ -12,7 +11,7 @@ import org.mrshoffen.tasktracker.auth.event.AuthEventPublisher;
 import org.mrshoffen.tasktracker.auth.authentication.repository.BlacklistTokenRepository;
 import org.mrshoffen.tasktracker.auth.util.jwt.JwtUtil;
 import org.mrshoffen.tasktracker.auth.util.CookieBuilderUtil;
-import org.mrshoffen.tasktracker.auth.registration.repository.UnconfirmedRegistrationAttemptRepository;
+import org.mrshoffen.tasktracker.auth.registration.repository.UnconfirmedRegistrationRepository;
 import org.mrshoffen.tasktracker.commons.kafka.event.authentication.AuthenticationSuccessfulEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -37,7 +36,7 @@ public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
 
-    private final UnconfirmedRegistrationAttemptRepository unconfirmedRegistrationHolder;
+    private final UnconfirmedRegistrationRepository unconfirmedRegistrationHolder;
 
     private final BlacklistTokenRepository blacklistTokenRepository;
 
@@ -56,7 +55,7 @@ public class AuthenticationController {
             throw new UnconfirmedRegistrationException("Данный email не подтвержден. Пройдите по ссылке, которую прислали в письме");
         }
 
-        authenticationService.validateUserCredentials(loginDto);
+        authenticationService.validateUserCredentials(loginDto.email(), loginDto.password());
         String userId = authenticationService.getUserId(loginDto.email());
 
         String refreshToken = jwtUtil.generateRefreshToken(Map.of("userId", userId, "userEmail", loginDto.email()));

@@ -1,20 +1,22 @@
-package org.mrshoffen.tasktracker.auth.registration.repository;
+package org.mrshoffen.tasktracker.auth.credentials.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.mrshoffen.tasktracker.commons.kafka.event.creds.EmailUpdateAttemptEvent;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @AllArgsConstructor
 @Slf4j
-public class UnconfirmedRegistrationAttemptRepository {
+public class UnconfirmedMailRepository {
 
     private static final String UNCONFIRMED_REG_PREFIX_KEY = "unconfirmed:";
 
@@ -23,29 +25,30 @@ public class UnconfirmedRegistrationAttemptRepository {
     private final ObjectMapper objectMapper;
 
     @SneakyThrows
-    public void save(RegistrationAttemptEvent event, Duration saveDuration) {
+    public void save(EmailUpdateAttemptEvent event, Duration saveDuration) {
         String json = objectMapper.writeValueAsString(event);
         redisTemplate.opsForValue().set(
-                UNCONFIRMED_REG_PREFIX_KEY + event.getRegistrationId(),
+                UNCONFIRMED_REG_PREFIX_KEY + event.getUserId(),
                 json,
                 saveDuration
         );
-        redisTemplate.opsForValue().set(UNCONFIRMED_REG_PREFIX_KEY + event.getEmail().toLowerCase(), "", saveDuration);
+        redisTemplate.opsForValue().set(UNCONFIRMED_REG_PREFIX_KEY + event.getNewEmail().toLowerCase(), "", saveDuration);
     }
 
-    public Optional<RegistrationAttemptEvent> findById(String registrationId) {
-        String json = redisTemplate.opsForValue().get(UNCONFIRMED_REG_PREFIX_KEY + registrationId);
+
+    public Optional<EmailUpdateAttemptEvent> findById(UUID id) {
+        String json = redisTemplate.opsForValue().get(UNCONFIRMED_REG_PREFIX_KEY + id.toString());
         try {
-            RegistrationAttemptEvent attempt = objectMapper.readValue(json, RegistrationAttemptEvent.class);
+            EmailUpdateAttemptEvent attempt = objectMapper.readValue(json, EmailUpdateAttemptEvent.class);
             return Optional.of(attempt);
         } catch (Exception e) {
             return Optional.empty();
         }
     }
 
-    public void delete(RegistrationAttemptEvent attempt) {
-        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + attempt.getRegistrationId());
-        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + attempt.getEmail());
+    public void delete(EmailUpdateAttemptEvent event) {
+        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + event.getUserId());
+        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + event.getNewEmail());
     }
 
     public boolean emailUnconfirmed(String email) {

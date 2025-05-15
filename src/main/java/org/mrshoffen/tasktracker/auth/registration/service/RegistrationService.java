@@ -7,11 +7,10 @@ import org.mrshoffen.tasktracker.auth.event.AuthEventPublisher;
 import org.mrshoffen.tasktracker.auth.mapper.RegistrationMapper;
 import org.mrshoffen.tasktracker.auth.registration.dto.RegistrationRequestDto;
 import org.mrshoffen.tasktracker.auth.registration.exception.UserAlreadyExistsException;
-import org.mrshoffen.tasktracker.auth.registration.repository.UnconfirmedRegistrationAttemptRepository;
+import org.mrshoffen.tasktracker.auth.registration.repository.UnconfirmedRegistrationRepository;
 import org.mrshoffen.tasktracker.auth.client.IpApiClient;
 import org.mrshoffen.tasktracker.auth.client.UserProfileClient;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
-import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationSuccessfulEvent;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -39,12 +38,12 @@ public class RegistrationService {
 
     private final PasswordEncoder passwordEncoder;
 
-    private final UnconfirmedRegistrationAttemptRepository unconfirmedRegRepo;
+    private final UnconfirmedRegistrationRepository unconfirmedRegistrationRepository;
 
     private final RegistrationMapper registrationMapper;
 
-    public void startUserRegistration(RegistrationRequestDto registrationDto, String ipAddr) {
-        if (unconfirmedRegRepo.emailUnconfirmed(registrationDto.email())) {
+    public String startUserRegistration(RegistrationRequestDto registrationDto, String ipAddr) {
+        if (unconfirmedRegistrationRepository.emailUnconfirmed(registrationDto.email())) {
             throw new UnconfirmedRegistrationException("Email уже использован, но не подтвержден. Пройдите по ссылке из письма");
         }
 
@@ -58,15 +57,17 @@ public class RegistrationService {
         RegistrationAttemptEvent event = buildRegistrationAttemptEvent(registrationDto, ipInfo);
         authEventPublisher.publishNewRegistrationEvent(event);
 
-        unconfirmedRegRepo.save(event, maxConfirmationTime);
+        unconfirmedRegistrationRepository.save(event, maxConfirmationTime);
+
+        return event.getConfirmationLink(); //Сделано для упрощения тестирования и регистрации, чтобы не переходить в почту)
     }
 
     public void confirmUserRegistration(String registrationId) {
-        RegistrationAttemptEvent registrationAttempt = unconfirmedRegRepo.findById(registrationId)
+        RegistrationAttemptEvent registrationAttempt = unconfirmedRegistrationRepository.findById(registrationId)
                 .orElseThrow(() ->
                         new UnconfirmedRegistrationException("Некорректная ссылка для подтверждения почты"));
 
-        unconfirmedRegRepo.delete(registrationAttempt);
+        unconfirmedRegistrationRepository.delete(registrationAttempt);
 
         var successfulRegistration = registrationMapper.buildSuccessfulRegistrationEvent(registrationAttempt);
         authEventPublisher.publishSuccessfulRegistrationEvent(successfulRegistration);

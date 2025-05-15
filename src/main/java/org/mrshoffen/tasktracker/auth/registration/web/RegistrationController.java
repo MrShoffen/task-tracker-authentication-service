@@ -24,14 +24,16 @@ public class RegistrationController {
     ResponseEntity<Map<String, String>> startUserRegistration(@Valid @RequestBody RegistrationRequestDto registrationDto,
                                                               @RequestHeader(value = "X-Forwarded-For", required = false) String userIp) {
 
-        registrationService.startUserRegistration(registrationDto, userIp);
+        String confirmLink = registrationService.startUserRegistration(registrationDto, userIp);
         return ResponseEntity.accepted()
-                .body(Map.of("message", "На Вашу почту %s отправлено письмо с подтверждением регистрации."
-                        .formatted(registrationDto.email())));
+                .body(Map.of(
+                        "message", "На Вашу почту %s отправлено письмо с подтверждением регистрации.".formatted(registrationDto.email()),
+                        "link", confirmLink
+                ));
     }
 
     @GetMapping("/sign-up")
-    ResponseEntity<Map<String,String>> confirmUserRegistration(@RequestParam("confirm") String registrationId) {
+    ResponseEntity<Map<String, String>> confirmUserRegistration(@RequestParam("confirm") String registrationId) {
 
         registrationService.confirmUserRegistration(registrationId);
         return ResponseEntity.status(HttpStatus.CREATED)

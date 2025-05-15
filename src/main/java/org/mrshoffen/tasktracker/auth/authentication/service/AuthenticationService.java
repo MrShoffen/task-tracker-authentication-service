@@ -19,16 +19,16 @@ public class AuthenticationService {
 
     private final PasswordEncoder passwordEncoder;
 
-    public void validateUserCredentials(LoginDto loginDto) {
+    public void validateUserCredentials(String email, String password) {
         try {
-            log.info("Attempt to authenticate - trying to validate user in user-profile-ws {}", loginDto);
-            String hashedPassword = userProfileClient.userHashedPassword(loginDto.email());
-            if (!passwordEncoder.matches(loginDto.password(), hashedPassword)) {
-                log.warn("Password didnt match");
+            log.info("Attempt to authenticate - trying to validate user in user-profile-ws {}", email);
+            String hashedPassword = userProfileClient.userHashedPassword(email);
+            if (!passwordEncoder.matches(password, hashedPassword)) {
+                log.warn("Password doesnt match");
                 throw new InvalidCredentialsException("Неверный логин или пароль");
             }
         } catch (FeignException.NotFound e) {
-            log.warn("Failed to fetch user {} from user-profile-ws", loginDto.email());
+            log.warn("Failed to fetch user {} from user-profile-ws", email);
             throw new InvalidCredentialsException("Неверный логин или пароль", e);
         }
     }

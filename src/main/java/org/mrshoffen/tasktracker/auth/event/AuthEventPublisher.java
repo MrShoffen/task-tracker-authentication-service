@@ -3,6 +3,9 @@ package org.mrshoffen.tasktracker.auth.event;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mrshoffen.tasktracker.commons.kafka.event.authentication.AuthenticationSuccessfulEvent;
+import org.mrshoffen.tasktracker.commons.kafka.event.creds.EmailUpdateAttemptEvent;
+import org.mrshoffen.tasktracker.commons.kafka.event.creds.EmailUpdatedSuccessEvent;
+import org.mrshoffen.tasktracker.commons.kafka.event.creds.PasswordUpdatedEvent;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationSuccessfulEvent;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -34,4 +37,20 @@ public class AuthEventPublisher {
         log.info("Event published to kafka topic '{}' - {}", AuthenticationSuccessfulEvent.TOPIC, event);
     }
 
+    public void publishPasswordUpdatedEvent(PasswordUpdatedEvent event) {
+        kafkaTemplate.send(PasswordUpdatedEvent.TOPIC, event.getUserId(), event);
+        log.info("Event published to kafka topic '{}' - {}", PasswordUpdatedEvent.TOPIC, event);
+
+    }
+
+    public void publishEmailUpdateAttempt(EmailUpdateAttemptEvent event) {
+        kafkaTemplate.send(EmailUpdateAttemptEvent.TOPIC, event.getUserId(), event);
+        log.info("Event published to kafka topic '{}' - {}", EmailUpdateAttemptEvent.TOPIC, event);
+    }
+
+    public void publishSuccessfulEmailUpdateEvent(EmailUpdatedSuccessEvent event) {
+        kafkaTemplate.send(EmailUpdatedSuccessEvent.TOPIC, event.getUserId(), event);
+        log.info("Event published to kafka topic '{}' - {}", EmailUpdatedSuccessEvent.TOPIC, event);
+
+    }
 }
