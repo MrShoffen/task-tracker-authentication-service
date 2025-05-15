@@ -11,6 +11,7 @@ public class CookieBuilderUtil {
     public static ResponseCookie clear(String cookieName) {
         return ResponseCookie
                 .from(cookieName, "")
+                .sameSite("None")
                 .path("/")
                 .maxAge(0)
                 .build();
@@ -20,6 +21,7 @@ public class CookieBuilderUtil {
         return ResponseCookie
                 .from(cookieName, cookieValue)
                 .maxAge(maxAge)
+                .sameSite("None")
                 .path("/")
                 .httpOnly(true)
                 .build();
