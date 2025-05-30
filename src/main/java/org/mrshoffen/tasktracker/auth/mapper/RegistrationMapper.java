@@ -2,8 +2,6 @@ package org.mrshoffen.tasktracker.auth.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
-import org.mrshoffen.tasktracker.auth.client.IpApiClient;
-import org.mrshoffen.tasktracker.auth.registration.dto.RegistrationRequestDto;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationAttemptEvent;
 import org.mrshoffen.tasktracker.commons.kafka.event.registration.RegistrationSuccessfulEvent;
 

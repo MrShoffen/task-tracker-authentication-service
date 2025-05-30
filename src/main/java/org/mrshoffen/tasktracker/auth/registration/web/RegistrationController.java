@@ -21,10 +21,9 @@ public class RegistrationController {
     private final RegistrationService registrationService;
 
     @PostMapping("/sign-up")
-    ResponseEntity<Map<String, String>> startUserRegistration(@Valid @RequestBody RegistrationRequestDto registrationDto,
-                                                              @RequestHeader(value = "X-Forwarded-For", required = false) String userIp) {
+    ResponseEntity<Map<String, String>> startUserRegistration(@Valid @RequestBody RegistrationRequestDto registrationDto) {
 
-        String confirmLink = registrationService.startUserRegistration(registrationDto, userIp);
+        String confirmLink = registrationService.startUserRegistration(registrationDto);
         return ResponseEntity.accepted()
                 .body(Map.of(
                         "message", "На Вашу почту %s отправлено письмо с подтверждением регистрации.".formatted(registrationDto.email()),
