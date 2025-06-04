@@ -5,7 +5,7 @@ jwt-user:
     refresh-token-key: '{"kty":"oct","k":"95dfNwiBe7vR5KnbguLr5irJD-a2gesF"}'
   ttl:
     access-ttl: 10m
-    refresh-ttl: 10h
+    refresh-ttl: 15d
 #
 redis-user:
   host: 192.168.0.125

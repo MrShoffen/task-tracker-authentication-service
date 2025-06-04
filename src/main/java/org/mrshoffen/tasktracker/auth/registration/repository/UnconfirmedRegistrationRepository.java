@@ -46,7 +46,7 @@ public class UnconfirmedRegistrationRepository {
 
     public void delete(RegistrationAttemptEvent attempt) {
         redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + attempt.getRegistrationId());
-        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + attempt.getEmail());
+        redisTemplate.delete(UNCONFIRMED_REG_PREFIX_KEY + attempt.getEmail().toLowerCase());
     }
 
     public boolean emailUnconfirmed(String email) {
